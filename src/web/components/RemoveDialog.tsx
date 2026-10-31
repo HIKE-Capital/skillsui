@@ -43,17 +43,6 @@ export function RemoveDialog({ open, onClose, t, skill, onConfirm }: RemoveDialo
           <AlertIcon size={20} />
           <p>{t('remove.body')}</p>
         </div>
-        {skill.agents.length > 0 ? (
-          <div className="remove-agents">
-            {skill.agents.map((agent) => (
-              <span className="agent-chip" key={agent}>
-                <span className="agent-dot" aria-hidden />
-                {agent}
-              </span>
-            ))}
-          </div>
-        ) : null}
-        {skill.path ? <code className="remove-path mono">{skill.path}</code> : null}
       </div>
     </Modal>
   );

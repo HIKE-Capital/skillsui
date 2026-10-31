@@ -541,10 +541,6 @@ export function InstallSheet({
                       : t('unit.agentMany', { n: selectedAgents.size })}
                   </strong>
                 </div>
-                <div className="summary-warning">
-                  <AlertIcon size={15} />
-                  {t('install.permission')}
-                </div>
               </div>
             </div>
           )}

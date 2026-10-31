@@ -1751,24 +1751,13 @@ button:disabled {
   color: var(--ink-faint);
 }
 
-.summary-warning {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: var(--amber-soft);
-  color: var(--amber);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
 /* ── Job sheet ─────────────────────────────────────────────────────── */
 
 .job-status {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  margin-top: 4px;
   padding: 2px 8px;
   border-radius: 999px;
   font-size: 11px;
@@ -2074,23 +2063,6 @@ button:disabled {
   line-height: 1.5;
 }
 
-.remove-agents {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 12px;
-}
-
-.remove-path {
-  display: block;
-  margin-top: 12px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: var(--paper);
-  color: var(--ink-soft);
-  font-size: 11px;
-  word-break: break-all;
-}
 
 /* ── Toast ─────────────────────────────────────────────────────────── */
 

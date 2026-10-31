@@ -105,12 +105,13 @@ export function JobSheet({ open, onClose, t, job, onCancel }: JobSheetProps) {
 
     if (job.type === 'update') {
       const result = job.result as UpdateOutcome | null;
+      const updated = result?.updated.filter((name) => name !== '*') ?? [];
       return (
         <div className="job-summary job-summary--success">
           <CheckIcon size={18} />
           <div>
-            <strong>{t('job.succeeded')}</strong>
-            <p>{result?.updated.filter((name) => name !== '*').join(', ') || '—'}</p>
+            <strong>{t('update.success')}</strong>
+            {updated.length > 0 ? <p>{updated.join(', ')}</p> : <p>{t('update.none')}</p>}
             {result?.failed.length ? (
               <p className="job-summary-fail">
                 {t('job.failed')}: {result.failed.map((item) => item.name).join(', ')}
@@ -133,21 +134,26 @@ export function JobSheet({ open, onClose, t, job, onCancel }: JobSheetProps) {
       open={open}
       onClose={onClose}
       title={job.title}
+      // Terminal states are announced by the big summary block below — the
+      // title pill would duplicate it. Keep the pill for queued/running (and
+      // as a fallback when a job type has no summary).
       subtitle={
-        <span className={`job-status job-status--${statusTone(job.status)}`}>
-          {running ? <SpinnerIcon size={14} /> : null}
-          {t(
-            job.status === 'queued'
-              ? 'job.queued'
-              : job.status === 'running'
-                ? 'job.running'
-                : job.status === 'succeeded'
-                  ? 'job.succeeded'
-                  : job.status === 'failed'
-                    ? 'job.failed'
-                    : 'job.cancelled'
-          )}
-        </span>
+        running || !summary ? (
+          <span className={`job-status job-status--${statusTone(job.status)}`}>
+            {running ? <SpinnerIcon size={14} /> : null}
+            {t(
+              job.status === 'queued'
+                ? 'job.queued'
+                : job.status === 'running'
+                  ? 'job.running'
+                  : job.status === 'succeeded'
+                    ? 'job.succeeded'
+                    : job.status === 'failed'
+                      ? 'job.failed'
+                      : 'job.cancelled'
+            )}
+          </span>
+        ) : null
       }
       width="md"
       footer={

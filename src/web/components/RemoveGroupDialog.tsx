@@ -54,13 +54,6 @@ export function RemoveGroupDialog({
           <AlertIcon size={20} />
           <p>{t('groupRemove.body')}</p>
         </div>
-        <div className="remove-agents">
-          {group.skills.map((skill) => (
-            <span className="agent-chip" key={skill.name}>
-              {skill.name}
-            </span>
-          ))}
-        </div>
       </div>
     </Modal>
   );
