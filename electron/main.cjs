@@ -71,7 +71,7 @@ async function resolveServer() {
 
   // 2. Start our own bundled server. The child log aids support diagnostics
   // (server stdout/stderr would otherwise be lost).
-  const out = fs.openSync('/tmp/skillsui-server-child.log', 'a');
+  const out = fs.openSync(path.join(os.tmpdir(), 'skillsui-server-child.log'), 'a');
   server = spawn(NODE_BIN, [SERVER], {
     stdio: ['ignore', out, out],
     env: { ...process.env, SKILLSUI_NO_OPEN: '1' },
@@ -167,32 +167,44 @@ async function createWindow() {
   });
   // Closing the window is the quit gesture. The server owns the jobs policy:
   // it answers 409 with a localized message while jobs are in flight.
-  win.on('close', async (event) => {
+  win.on('close', (event) => {
     if (quitting) return;
-    try {
-      const res = await fetch(`http://127.0.0.1:${rt.port}/api/quit`, {
-        method: 'POST',
-        signal: AbortSignal.timeout(1500),
-      });
-      if (res.status !== 409) return; // 200: server is quitting, let the window close
-      event.preventDefault();
-      const body = await res.json().catch(() => ({}));
-      const choice = await dialog.showMessageBox(win, {
-        type: 'warning',
-        message: body.message, // localized by the server, which owns the policy
-        buttons: ['取消', '退出'],
-        defaultId: 0,
-        cancelId: 0,
-      });
-      if (choice.response === 1) {
-        quitting = true;
-        win.destroy();
-        stopServer();
-        app.quit();
+    // preventDefault must run synchronously — Electron decides on the close
+    // as soon as the emit returns, before any await resumes.
+    event.preventDefault();
+    void (async () => {
+      let proceed = true;
+      let confirmMessage = null;
+      try {
+        const res = await fetch(`http://127.0.0.1:${rt.port}/api/quit`, {
+          method: 'POST',
+          signal: AbortSignal.timeout(1500),
+        });
+        if (res.status === 409) {
+          const body = await res.json().catch(() => ({}));
+          confirmMessage = body.message; // localized by the server, which owns the policy
+          proceed = false;
+        }
+      } catch {
+        // Server unreachable: nothing to protect, close normally.
       }
-    } catch {
-      // Server unreachable: nothing to protect, close normally.
-    }
+
+      if (!proceed) {
+        const choice = await dialog.showMessageBox(win, {
+          type: 'warning',
+          message: confirmMessage,
+          buttons: ['取消', '退出'],
+          defaultId: 0,
+          cancelId: 0,
+        });
+        if (choice.response !== 1) return;
+      }
+
+      quitting = true;
+      win.destroy();
+      stopServer();
+      app.quit();
+    })();
   });
 
   // Watch server death BEFORE the first navigation: if the child dies early,

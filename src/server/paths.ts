@@ -97,10 +97,3 @@ export function webDistDir(): string {
   return resolve(process.cwd(), 'dist', 'web');
 }
 
-export function serverEntryDir(): string {
-  try {
-    return dirname(fileURLToPath(import.meta.url));
-  } catch {
-    return process.cwd();
-  }
-}

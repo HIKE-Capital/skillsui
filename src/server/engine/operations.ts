@@ -1,5 +1,4 @@
 import { existsSync } from 'node:fs';
-import { homedir } from 'node:os';
 import type {
   InstallRequest,
   InstalledSkill,
@@ -14,13 +13,12 @@ import {
   loadConfig,
   makeGithubId,
   removeGithubInstall,
-  scopeKey,
   upsertGithubInstall,
   type GithubInstallRecord,
 } from '../config.js';
 import { AppError } from '../errors.js';
 import { skillsuiHome } from '../paths.js';
-import { agentDisplayName, agentExists, allAgentKeys } from './agent-service.js';
+import { agentExists } from './agent-service.js';
 import { runCli, type CliResult } from './cli.js';
 import { getGitInfo } from './git.js';
 import { invalidateIconForSource } from './icons.js';
@@ -398,10 +396,10 @@ export async function updateSkills(
 
   const listed = await listInstalledSkills(request.scope, projectPath);
   const byName = new Map(listed.skills.map((skill) => [skill.name, skill]));
-  const cliNames = names.filter((name) => {
-    const skill = byName.get(name);
-    return !skill || skill.managedBy === 'cli';
-  });
+  const cliNames = names.filter((name) => byName.get(name)?.managedBy === 'cli');
+  // Requested names with no installed skill at all: the CLI would exit 0 with
+  // "no matching skills" — surface them as failures instead of phantom wins.
+  const missing = names.filter((name) => !byName.has(name));
 
   // Drop stale records for skills the official lock already owns.
   const allRecords = listGithubInstalls(request.scope, projectPath);
@@ -442,6 +440,10 @@ export async function updateSkills(
     }
   }
 
+  for (const name of missing) {
+    failed.push({ name, error: '技能未安装或已不存在，无法更新。' });
+  }
+
   if (request.includeSkillsuiManaged !== false && records.length > 0) {
     const http = await updateHttpRecords(records, ctx, await standardGithubActive());
     updated.push(...http.updated);
@@ -451,29 +453,8 @@ export async function updateSkills(
   return { updated, failed };
 }
 
-export async function refreshInstalled(
-  scope: Scope,
-  projectPath: string | null
-): Promise<InstalledSkill[]> {
-  return (await listInstalledSkills(scope, projectPath)).skills;
-}
 
-export function agentName(key: string): string {
-  return agentDisplayName(key);
-}
 
-export function knownAgents(): string[] {
-  return allAgentKeys();
-}
 
-export function projectScopeKey(scope: Scope, projectPath: string | null): string {
-  return scopeKey(scope, projectPath);
-}
 
-export function defaultHome(): string {
-  return homedir();
-}
 
-export function configProject(): string | null {
-  return loadConfig().activeProject;
-}

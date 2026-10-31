@@ -79,7 +79,10 @@ function extractIconHref(html: string, pageUrl: string): string | null {
   if (!base) return null;
   const tags = html.match(/<link\b[^>]*>/gi) ?? [];
   for (const tag of tags) {
-    const rel = /rel\s*=\s*["']?([^"'>\s]+)/i.exec(tag)?.[1] ?? '';
+    // rel can be a space-separated list ("shortcut icon"), so capture the
+    // full quoted value, not just the first token.
+    const relMatch = /rel\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/i.exec(tag);
+    const rel = (relMatch?.[1] ?? relMatch?.[2] ?? relMatch?.[3] ?? '').trim();
     if (!/icon/i.test(rel)) continue;
     const href = /href\s*=\s*["']([^"']+)["']/i.exec(tag)?.[1];
     if (!href) continue;
@@ -100,9 +103,14 @@ async function fetchDataUrl(dataUrl: string): Promise<{ buf: Buffer; contentType
   if (!isImage(contentType)) return null;
   const base64 = match[2];
   const payload = match[3]!;
-  const buf = base64
-    ? Buffer.from(payload, 'base64')
-    : Buffer.from(decodeURIComponent(payload), 'utf8');
+  let buf: Buffer;
+  try {
+    buf = base64
+      ? Buffer.from(payload, 'base64')
+      : Buffer.from(decodeURIComponent(payload), 'utf8');
+  } catch {
+    return null; // malformed payload (e.g. invalid percent-encoding)
+  }
   if (buf.length === 0 || buf.length > MAX_ICON_BYTES) return null;
   return { buf, contentType };
 }
@@ -146,20 +154,26 @@ async function fetchSiteIcon(host: string): Promise<IconPayload | null> {
   return null;
 }
 
-async function loadFromCache(key: string): Promise<IconPayload | null> {
+type CacheLookup =
+  | { kind: 'hit'; payload: IconPayload }
+  | { kind: 'negative' }
+  | { kind: 'miss' };
+
+async function loadFromCache(key: string): Promise<CacheLookup> {
   const { img, meta } = cachePaths(key);
-  if (!existsSync(meta)) return null;
+  if (!existsSync(meta)) return { kind: 'miss' };
   try {
     const parsed = JSON.parse(readFileSync(meta, 'utf8')) as IconCacheMeta;
     const age = Date.now() - parsed.fetchedAt;
     if (parsed.ok && age < POSITIVE_TTL_MS && existsSync(img)) {
-      return { data: readFileSync(img), contentType: parsed.contentType };
+      return { kind: 'hit', payload: { data: readFileSync(img), contentType: parsed.contentType } };
     }
-    if (!parsed.ok && age < NEGATIVE_TTL_MS) return null; // still considered failing
-    return null;
+    // Failing source inside its retry window: stay quiet, do not re-fetch.
+    if (!parsed.ok && age < NEGATIVE_TTL_MS) return { kind: 'negative' };
   } catch {
-    return null;
+    // fall through to miss
   }
+  return { kind: 'miss' };
 }
 
 function storeToCache(key: string, url: string, payload: IconPayload | null): void {
@@ -183,7 +197,8 @@ async function resolveIcon(kind: 'github' | 'site', id: string): Promise<IconPay
   const lower = id.toLowerCase();
   const key = cacheKey(kind, lower);
   const cached = await loadFromCache(key);
-  if (cached) return cached;
+  if (cached.kind === 'hit') return cached.payload;
+  if (cached.kind === 'negative') return null;
 
   const url = kind === 'github' ? `https://github.com/${lower}.png` : `https://${lower}/`;
   const existing = inflight.get(key);

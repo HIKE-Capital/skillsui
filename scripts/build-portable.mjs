@@ -149,7 +149,8 @@ function readme(target) {
   1. 双击 Skillsui.app。
   2. 首次打开如果提示“无法验证开发者”，请右键点击 Skillsui.app → 打开。
   3. 浏览器会自动打开 Skillsui 界面。
-  4. 使用完毕后，点击界面左下角的“设置” → “退出 Skillsui”。
+  4. 使用完毕后，关闭浏览器页面即可；后台服务在系统重启后自动结束，
+     也可在活动监视器（Windows：任务管理器）中结束 node 进程。
 
 说明
   · 所有数据保存在 ~/.skillsui
@@ -159,13 +160,14 @@ function readme(target) {
   · 不上传任何数据，遥测已关闭
 
 卸载
-  退出 Skillsui 后，把 Skillsui.app 移到废纸篓即可。
+  把 Skillsui.app 移到废纸篓即可。
   已安装的 skill 不会被删除；可以在界面中卸载。
 
 Skillsui v${APP_VERSION} — macOS (Apple Silicon)
   Double-click Skillsui.app. If macOS says the developer cannot be verified,
   right-click the app and choose Open. The browser opens automatically.
-  Quit from Settings → Quit Skillsui.
+  When finished, close the browser tab; the background service stops on
+  the next reboot (or end the node process via Task Manager).
   Data: ~/.skillsui. Bundled Node ${NODE_VERSION} and skills ${ENGINE_VERSION}.
   GitHub sources use HTTPS downloads of public repositories; Git is not required.
 `;
@@ -176,7 +178,8 @@ Skillsui v${APP_VERSION} — macOS (Apple Silicon)
   1. 双击 Skillsui.exe。
   2. 如果 SmartScreen 提示“Windows 已保护你的电脑”，点击“更多信息” → “仍要运行”。
   3. 浏览器会自动打开 Skillsui 界面。
-  4. 使用完毕后，点击界面左下角的“设置” → “退出 Skillsui”。
+  4. 使用完毕后，关闭浏览器页面即可；后台服务在系统重启后自动结束，
+     也可在活动监视器（Windows：任务管理器）中结束 node 进程。
 
 说明
   · 所有数据保存在 %USERPROFILE%\\.skillsui
@@ -186,12 +189,13 @@ Skillsui v${APP_VERSION} — macOS (Apple Silicon)
   · 不上传任何数据，遥测已关闭
 
 卸载
-  退出 Skillsui 后，删除整个 Skillsui-Windows-x64 文件夹即可。
+  删除整个 Skillsui-Windows-x64 文件夹即可。
   已安装的 skill 不会被删除；可以在界面中卸载。
 
 Skillsui v${APP_VERSION} — Windows x64
   Double-click Skillsui.exe. If SmartScreen appears, choose More info → Run anyway.
-  The browser opens automatically. Quit from Settings → Quit Skillsui.
+  When finished, close the browser tab; the background service stops on
+  the next reboot (or end the node process via Task Manager).
   Data: %USERPROFILE%\\.skillsui. Bundled Node ${NODE_VERSION} and skills ${ENGINE_VERSION}.
   GitHub sources use HTTPS downloads of public repositories; Git is not required.
 `;

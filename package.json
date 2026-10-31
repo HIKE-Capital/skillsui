@@ -1,6 +1,7 @@
 {
   "name": "skillsui",
   "version": "0.1.0",
+  "license": "MIT",
   "private": true,
   "description": "A simple cross-platform GUI for the agent skills CLI",
   "type": "module",

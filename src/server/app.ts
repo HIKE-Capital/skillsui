@@ -105,12 +105,10 @@ function normalizeProject(scope: Scope, value: unknown): string | null {
 }
 
 async function installedNameSet(scope: Scope, projectPath: string | null): Promise<Set<string>> {
-  try {
-    const listed = await listInstalledSkills(scope, projectPath);
-    return new Set(listed.skills.map((skill) => skill.name));
-  } catch {
-    return new Set();
-  }
+  // Deliberately no catch: a failed `skills list` must abort the scan instead
+  // of reporting every installed skill as absent.
+  const listed = await listInstalledSkills(scope, projectPath);
+  return new Set(listed.skills.map((skill) => skill.name));
 }
 
 async function currentGitStatus(config: AppConfig): Promise<GitStatus> {
@@ -487,6 +485,18 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     });
     raw.write(`retry: 1500\n\n`);
     raw.write(`event: snapshot\ndata: ${JSON.stringify(job)}\n\n`);
+    // A job that is already terminal will never emit a status event; end the
+    // stream now instead of leaking the socket and heartbeat.
+    if (['succeeded', 'failed', 'cancelled'].includes(job.status)) {
+      setTimeout(() => {
+        try {
+          raw.end();
+        } catch {
+          // ignore
+        }
+      }, 50);
+      return;
+    }
 
     const heartbeat = setInterval(() => {
       try {

@@ -74,9 +74,15 @@ function killTree(child: ChildProcessByStdio<null, Readable, Readable>): void {
   } catch {
     // fall through
   }
+  // child.killed is true immediately after kill() — track actual exit so the
+  // SIGKILL escalation still fires when the process ignores SIGTERM.
+  let exited = false;
+  child.once('exit', () => {
+    exited = true;
+  });
   setTimeout(() => {
     try {
-      if (!child.killed) child.kill('SIGKILL');
+      if (!exited) child.kill('SIGKILL');
     } catch {
       // ignore
     }

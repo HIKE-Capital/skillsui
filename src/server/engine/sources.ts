@@ -504,15 +504,3 @@ function httpScanError(output: string): string {
   return '扫描来源失败。';
 }
 
-export function isLocalPath(input: string): boolean {
-  const value = input.trim();
-  if (!value) return false;
-  if (value.startsWith('./') || value.startsWith('../') || value.startsWith('/') || value.startsWith('~/')) {
-    return true;
-  }
-  try {
-    return existsSync(value) && statSync(value).isDirectory();
-  } catch {
-    return false;
-  }
-}

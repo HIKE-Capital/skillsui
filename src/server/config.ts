@@ -2,6 +2,7 @@ import { existsSync, readFileSync, renameSync, statSync, writeFileSync } from 'n
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
 import { homedir } from 'node:os';
 import type { AppConfig, RecentProject, Scope } from '../shared/types.js';
+import { AppError } from './errors.js';
 import { configPath, ensureSkillsuiHome, githubStatePath } from './paths.js';
 
 export interface GithubInstallRecord {
@@ -119,7 +120,7 @@ export function addRecentProject(input: string): AppConfig {
     // its timestamp in place. Only genuinely new projects go to the top.
     config.recentProjects[index] = entry;
   } else {
-    config.recentProjects = [entry, ...config.recentProjects].slice(0, 20);
+    config.recentProjects = [entry, ...config.recentProjects].slice(0, 30);
   }
   config.activeProject = path;
   config.activeScope = 'project';
@@ -149,14 +150,16 @@ export function isProjectDir(path: string | null | undefined): boolean {
 
 export function resolveProjectPath(input: string): string {
   let value = input.trim();
-  if (!value) throw new Error('项目路径不能为空。');
+  if (!value) throw new AppError('PROJECT_PATH_EMPTY', '项目路径不能为空。', 400);
   if (value === '~') value = homedir();
   else if (value.startsWith('~/') || value.startsWith('~\\')) {
     value = join(homedir(), value.slice(2));
   }
   if (!isAbsolute(value)) value = resolve(process.cwd(), value);
   value = resolve(value);
-  if (!isProjectDir(value)) throw new Error(`文件夹不存在：${value}`);
+  if (!isProjectDir(value)) {
+    throw new AppError('PROJECT_NOT_FOUND', `文件夹不存在：${value}`, 400);
+  }
   return value;
 }
 
@@ -214,18 +217,6 @@ export function listGithubInstalls(
   return Object.values(loadGithubState().installs).filter(
     (record) => scopeKey(record.scope, record.projectPath) === key
   );
-}
-
-export function pruneGithubInstalls(existingNames: Set<string>): void {
-  const state = loadGithubState();
-  let changed = false;
-  for (const [id, record] of Object.entries(state.installs)) {
-    if (!existingNames.has(id)) {
-      delete state.installs[id];
-      changed = true;
-    }
-  }
-  if (changed) saveGithubState(state);
 }
 
 export function findGithubInstallByName(

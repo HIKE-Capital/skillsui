@@ -41,7 +41,6 @@ export interface AgentInfo {
   universal: boolean;
   supportsGlobal: boolean;
   detected: boolean;
-  projectDetected: boolean;
 }
 
 export interface InstalledSkill {

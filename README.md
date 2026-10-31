@@ -6,12 +6,12 @@
 
 ## 交付物
 
-便携包（推荐给最终用户）：
+桌面应用（独立窗口，关闭窗口即退出）：
 
-- `release/Skillsui-macOS-arm64.zip` — macOS Apple Silicon，`.app`，内置 Node 与 skills 引擎
-- `release/Skillsui-Windows-x64.zip` — Windows x64，`Skillsui.exe`，内置 Node 与 skills 引擎
+- `Skillsui-<版本>-arm64.dmg` — macOS Apple Silicon，拖入「应用程序」即可
+- `Skillsui-Setup-<版本>.exe` — Windows x64 安装器
 
-解压后按包内 `README.txt` 操作即可，**不需要安装 Node 或 npm**。Git 是可选的：检测到 Git 时，GitHub 来源会走官方标准流程（写入官方锁，可由 `npx skills` 更新）；没有 Git 时自动使用免 Git 的直链模式。
+由 `electron/` 打包（见下文「构建安装包」）。所有数据保存在 `~/.skillsui`，与应用版本无关。Git 是可选的：检测到 Git 时，GitHub 来源会走官方标准流程（写入官方锁，可由 `npx skills` 更新）；没有 Git 时自动使用免 Git 的直链模式。
 
 ## 功能
 
@@ -39,7 +39,7 @@
 
 ```bash
 npm install
-npm run dev        # Vite: http://localhost:5173, API: 127.0.0.1:4317
+npm run dev        # Vite: http://localhost:5173, API: 127.0.0.1:4317（API 不热重载，改服务端后需重启）
 npm test
 npm run typecheck
 ```
@@ -51,22 +51,16 @@ npm run build      # dist/server/index.mjs + dist/web
 npm start          # 启动本地服务并打开浏览器
 ```
 
-## 构建便携包
+## 构建安装包
 
 ```bash
-npm run portable
+npm run build
+node electron/build.mjs
 ```
 
-会依次：
-
-1. 构建前端与服务端
-2. 下载并校验 Node v24.22.1（macOS arm64 / Windows x64）
-3. 安装内置 `skills@1.7.4`
-4. 组装 `Skillsui.app`（macOS）与 `Skillsui-Windows-x64`（Windows）
-5. 对 macOS `.app` 做 ad-hoc 签名
-6. 输出 zip 到 `release/`
-
-Windows 启动器需要 Go（`brew install go`）交叉编译；macOS 启动器使用系统 clang。
+- 前置：`npm run build` 产出 `dist/`；`npm run portable` 至少跑过一次（准备 `.cache/` 里的 Node 与引擎）；首次会自动安装 `electron/` 下的依赖
+- 产物：`electron/release/Skillsui-<版本>-arm64.dmg` 与 `Skillsui-Setup-<版本>.exe`
+- macOS 产物为 ad-hoc 签名
 
 ## 环境变量（调试用）
 
@@ -78,13 +72,14 @@ Windows 启动器需要 Go（`brew install go`）交叉编译；macOS 启动器�
 | `SKILLSUI_NO_OPEN` | 设为 `1` 时不自动打开浏览器 |
 | `SKILLSUI_DEV` | 设为 `1` 时进入开发模式（禁用本地 token） |
 | `SKILLSUI_GIT` | 指定 Git 可执行文件路径（优先于自动探测；调试用） |
+| `SKILLSUI_E2E` | Electron 壳的无头自动化模式（隐藏窗口 + 独立 userData） |
 
 ## 已知限制
 
 - **GitHub 只支持公开仓库**。私有仓库需要 Git 凭据/Token，v1 不支持；界面会提示。
 - **GitLab / Azure / 任意 git URL** 不在 v1 范围内。
 - **直链模式的 GitHub 安装不会写入官方 `skills-lock.json`**，由 Skillsui 的元数据管理；`npx skills list` 会显示 `Source: local`。标准模式没有这个限制。模式自动选择，不需要配置。
-- macOS 使用 ad-hoc 签名，首次打开从网络下载的包需要右键 →“打开”；没有付费 Developer ID 公证。
+- macOS 使用 ad-hoc 签名，无付费 Developer ID 公证。首次打开被 Gatekeeper 拦截时：macOS Sequoia 15 及更新版本，先双击 .app，再到「系统设置 → 隐私与安全性」最下方点击「仍要打开」；Sonoma 14 及更早版本可用右键 →「打开」。
 - Windows 包未签名，SmartScreen 会提示“更多信息 → 仍要运行”。
 - Windows 构建已在 macOS 上交叉编译并通过文件/结构检查，但真实安装/更新/卸载仍需在 Windows 上验收。
 
@@ -93,14 +88,19 @@ Windows 启动器需要 Go（`brew install go`）交叉编译；macOS 启动器�
 ```
 src/server/            本地服务、技能引擎适配、来源解析、任务队列
 src/web/               React 界面
-src/shared/            前后端共享类型
-scripts/               开发、构建、便携打包、启动器
+src/shared/            前后端共享类型与常量
+scripts/               开发、构建、打包脚本（scripts/lib/ 为共享暂存配方）
+electron/              Electron 桌面壳与打包脚本（产物在 electron/release/）
 tests/                 解析器与来源分类单元测试
-release/               便携包产物
+release/               便携包产物（历史遗留）
 ```
 
 ## 第三方
 
 - [`skills`](https://github.com/vercel-labs/skills) — MIT，Skillsui 捆绑其 CLI 作为执行引擎。
 - Agent 路径表派生自 `skills` 的 `src/agents.ts`（MIT），许可证文本见 `THIRD_PARTY_LICENSES/skills-LICENSE.txt`。
-- Node.js — 其许可证随便携包一起分发在 `licenses/` 中。
+- Node.js — 其许可证随安装包一起分发在 `licenses/` 中。
+
+## 许可证
+
+[MIT](LICENSE) — 捆绑分发的 Node.js 与 skills CLI 同为 MIT。

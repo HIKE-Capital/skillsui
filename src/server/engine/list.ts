@@ -197,10 +197,4 @@ export async function listInstalledSkills(
   return { skills, warnings: [] };
 }
 
-export function currentScopeKey(scope: Scope, projectPath: string | null): string {
-  return scopeKey(scope, projectPath);
-}
 
-export function configuredProject(): string | null {
-  return loadConfig().activeProject;
-}

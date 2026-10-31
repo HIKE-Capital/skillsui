@@ -24,7 +24,6 @@ export async function listAgents(projectPath: string | null): Promise<AgentInfo[
       universal: isUniversalAgent(key),
       supportsGlobal: config.globalSkillsDir !== undefined,
       detected: detected.has(key),
-      projectDetected: detected.has(key),
     }))
     .sort((a, b) => {
       if (a.detected !== b.detected) return a.detected ? -1 : 1;
@@ -32,41 +31,5 @@ export async function listAgents(projectPath: string | null): Promise<AgentInfo[
     });
 }
 
-export function filterSelectableAgents(
-  agentInfos: AgentInfo[],
-  scope: Scope
-): AgentInfo[] {
-  return agentInfos.filter((agent) => (scope === 'global' ? agent.supportsGlobal : true));
-}
 
-export function resolveDefaultAgents(
-  agentInfos: AgentInfo[],
-  scope: Scope,
-  lastAgents: string[]
-): string[] {
-  const selectable = new Set(filterSelectableAgents(agentInfos, scope).map((a) => a.key));
-  const fromLast = lastAgents.filter((a) => selectable.has(a));
-  if (fromLast.length > 0) return fromLast;
-  const detected = agentInfos.filter((a) => a.detected && selectable.has(a.key)).map((a) => a.key);
-  if (detected.length > 0) return detected;
-  // A conservative fallback that works everywhere: Claude Code if available,
-  // otherwise the first universal agent.
-  const claude = agentInfos.find((a) => a.key === 'claude-code' && selectable.has(a.key));
-  if (claude) return [claude.key];
-  const universal = agentInfos.find((a) => a.universal && selectable.has(a.key));
-  return universal ? [universal.key] : [];
-}
 
-export function validateAgents(keys: string[], scope: Scope): string[] {
-  const errors: string[] = [];
-  for (const key of keys) {
-    if (!agentExists(key)) {
-      errors.push(`未知的 agent：${key}`);
-      continue;
-    }
-    if (scope === 'global' && getAgentConfig(key).globalSkillsDir === undefined) {
-      errors.push(`${agentDisplayName(key)} 不支持全局安装`);
-    }
-  }
-  return errors;
-}

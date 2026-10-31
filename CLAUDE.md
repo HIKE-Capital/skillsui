@@ -110,7 +110,7 @@ UI state lives in `~/.skillsui/config.json` (locale, recent projects, active pro
 - The topbar exposes a single **全部更新** action; every installed row has an icon-only **更新** button, and each source group header has a delete-all button plus a link to the source site (GitHub repo or domain, with hardcoded landing pages for a couple of hosts in `src/shared/sourcePages.ts`). There is no "check for updates" feature: `skills@1.7.4` routes `check` to the same `runUpdate()` as `update`, so a "check" button would install updates — `/api/check-updates` and the check code were removed for this reason. Row action buttons are hover-only.
 - UI is bilingual (`zh-CN` default via system locale, English toggle); server error strings are Chinese. Row icons come from the server-side icon cache; the browser never fetches source hosts directly.
 - Loopback-only, token-authenticated, no telemetry. Never use `--agent '*'`; pass explicit agent keys.
-- The macOS bundle is ad-hoc signed (Gatekeeper right-click-to-open); Windows is unsigned. The Windows package has been cross-compiled and structurally checked but not run on a real Windows machine.
+- The macOS bundle is ad-hoc signed (Gatekeeper: on macOS Sequoia 15+ users must approve via System Settings → Privacy & Security → Open Anyway; the right-click → Open bypass only applies to Sonoma 14 and earlier); Windows is unsigned. The Windows package has been cross-compiled and structurally checked but not run on a real Windows machine.
 
 ## Testing
 
