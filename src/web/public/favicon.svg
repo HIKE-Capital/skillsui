@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Skillsui</title>
+  <rect width="64" height="64" rx="14" fill="#f3f5f0"/>
+  <rect x="10" y="10" width="30" height="30" rx="9" fill="none" stroke="#1f5c4d" stroke-width="4"/>
+  <rect x="24" y="24" width="30" height="30" rx="9" fill="#1f5c4d" stroke="#f3f5f0" stroke-width="4"/>
+</svg>
