@@ -526,6 +526,7 @@ export function App() {
         agents={bootstrap.agents}
         engineVersion={bootstrap.engineVersion}
         version={bootstrap.version}
+        quitAvailable={bootstrap.quitAvailable}
         onSelectGlobal={() => void selectGlobal()}
         onSelectProject={(project) => void selectProject(project)}
         onAddProject={() => setAddProjectOpen(true)}

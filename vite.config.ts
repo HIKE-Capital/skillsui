@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath, URL } from 'node:url';
+import { DEV_PORT } from './src/shared/dev.js';
 
 export default defineConfig({
   root: 'src/web',
@@ -18,7 +19,9 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': 'http://127.0.0.1:4317',
+      // ^ anchors the regex: only real API paths (/api/...) are proxied.
+      // A bare '/api' prefix would also swallow /api.ts, the web api module.
+      '^/api/': `http://127.0.0.1:${DEV_PORT}`,
     },
   },
 });

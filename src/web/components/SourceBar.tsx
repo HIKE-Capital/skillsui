@@ -10,7 +10,7 @@ interface SourceBarProps {
   t: Translate;
 }
 
-const examples = ['https://q.hikecapital.com', 'op7418/Humanizer-zh'];
+const examples = ['https://q.hikecapital.com', 'op7418/Humanizer-zh', 'anthropics/skills'];
 
 export function SourceBar({ value, onChange, onSubmit, busy, t }: SourceBarProps) {
   const inputId = useId();

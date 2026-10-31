@@ -19,6 +19,8 @@ interface SidebarProps {
   agents: AgentInfo[];
   engineVersion: string;
   version: string;
+  /** False in the desktop shell: closing the window stops the app. */
+  quitAvailable: boolean;
   onSelectGlobal: () => void;
   onSelectProject: (project: RecentProject) => void;
   onAddProject: () => void;
@@ -39,6 +41,7 @@ export function Sidebar({
   agents,
   engineVersion,
   version,
+  quitAvailable,
   onSelectGlobal,
   onSelectProject,
   onAddProject,
@@ -126,16 +129,18 @@ export function Sidebar({
             <SettingsIcon size={17} />
             <span className="rail-settings-label">{t('nav.settings')}</span>
           </button>
-          <button
-            type="button"
-            className="rail-quit"
-            onClick={onQuit}
-            aria-label={t('nav.quit')}
-            title={t('nav.quit')}
-          >
-            <PowerIcon size={17} />
-            <span className="rail-settings-label">{t('nav.quit')}</span>
-          </button>
+          {quitAvailable ? (
+            <button
+              type="button"
+              className="rail-quit"
+              onClick={onQuit}
+              aria-label={t('nav.quit')}
+              title={t('nav.quit')}
+            >
+              <PowerIcon size={17} />
+              <span className="rail-settings-label">{t('nav.quit')}</span>
+            </button>
+          ) : null}
         </div>
         <div className="rail-meta">
           <span>v{version}</span>

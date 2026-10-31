@@ -5,6 +5,7 @@ import { spawn } from 'node:child_process';
 import { join } from 'node:path';
 import { buildApp, startServer } from './app.js';
 import { addRecentProject } from './config.js';
+import { DEV_PORT } from '../shared/dev.js';
 import { APP_VERSION, ensureSkillsuiHome, logsDir, runtimePath } from './paths.js';
 
 interface RuntimeInfo {
@@ -195,7 +196,7 @@ async function main(): Promise<void> {
   }
 
   const token = dev ? 'dev' : randomBytes(24).toString('hex');
-  const port = dev ? 4317 : 0;
+  const port = dev ? DEV_PORT : 0;
   const app = await buildApp({ token, dev, port });
   const actualPort = await startServer(app, port);
 

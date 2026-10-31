@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 import {
   chmodSync,
-  cpSync,
   existsSync,
   mkdirSync,
   readFileSync,
@@ -10,27 +10,27 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { spawnSync } from 'node:child_process';
 import AdmZip from 'adm-zip';
+import {
+  NODE_VERSION,
+  copyDir,
+  copyFile,
+  fail,
+  log,
+  run,
+  sha256,
+  stageResources,
+  write,
+} from './lib/stage.mjs';
 
 const ROOT = resolve('.');
 const APP_VERSION = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf-8')).version;
-const NODE_VERSION = '24.22.1';
 const ENGINE_VERSION = '1.7.4';
 const CACHE = join(ROOT, '.cache');
 const RELEASE = join(ROOT, 'release');
 const NODE_CACHE = join(CACHE, 'node');
 const ENGINE_CACHE = join(CACHE, 'engine');
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-
-function log(message) {
-  console.log(`\n▸ ${message}`);
-}
-
-function fail(message) {
-  console.error(`\n✗ ${message}`);
-  process.exit(1);
-}
 
 // Finder/Spotlight can recreate .DS_Store while a release directory is being
 // removed, which surfaces as ENOTEMPTY. Retry briefly instead of failing the
@@ -42,21 +42,6 @@ function removeTree(path) {
     maxRetries: 5,
     retryDelay: 120,
   });
-}
-
-function run(command, args, options = {}) {
-  const result = spawnSync(command, args, {
-    stdio: 'inherit',
-    ...options,
-  });
-  if (result.error) fail(`${command} failed: ${result.error.message}`);
-  if (result.status !== 0) fail(`${command} exited with code ${result.status}`);
-}
-
-function sha256(file) {
-  const hash = createHash('sha256');
-  hash.update(readFileSync(file));
-  return hash.digest('hex');
 }
 
 async function download(url, dest) {
@@ -156,23 +141,6 @@ function ensureEngine() {
   return join(ENGINE_CACHE, 'node_modules');
 }
 
-function copyDir(src, dest) {
-  rmSync(dest, { recursive: true, force: true });
-  mkdirSync(dirname(dest), { recursive: true });
-  cpSync(src, dest, { recursive: true });
-}
-
-function copyFile(src, dest) {
-  mkdirSync(dirname(dest), { recursive: true });
-  cpSync(src, dest);
-}
-
-function write(file, content, mode) {
-  mkdirSync(dirname(file), { recursive: true });
-  writeFileSync(file, content, 'utf-8');
-  if (mode) chmodSync(file, mode);
-}
-
 function readme(target) {
   if (target === 'macos') {
     return `Skillsui v${APP_VERSION} — macOS (Apple Silicon)
@@ -227,21 +195,6 @@ Skillsui v${APP_VERSION} — Windows x64
   Data: %USERPROFILE%\\.skillsui. Bundled Node ${NODE_VERSION} and skills ${ENGINE_VERSION}.
   GitHub sources use HTTPS downloads of public repositories; Git is not required.
 `;
-}
-
-function buildInfo(target) {
-  return JSON.stringify(
-    {
-      name: 'Skillsui',
-      version: APP_VERSION,
-      target,
-      node: NODE_VERSION,
-      skills: ENGINE_VERSION,
-      builtAt: new Date().toISOString(),
-    },
-    null,
-    2
-  );
 }
 
 function makeIcon() {
@@ -308,18 +261,12 @@ function buildMac(nodeAssets, engineModules) {
   mkdirSync(join(contents, 'MacOS'), { recursive: true });
   mkdirSync(resources, { recursive: true });
 
-  copyFile(nodeAssets.macNode, join(resources, 'node'));
-  chmodSync(join(resources, 'node'), 0o755);
-  copyFile(join(ROOT, 'dist', 'server', 'index.mjs'), join(resources, 'app', 'server.mjs'));
-  copyDir(join(ROOT, 'dist', 'web'), join(resources, 'app', 'web'));
-  copyDir(engineModules, join(resources, 'engine', 'node_modules'));
-  rmSync(join(resources, 'engine', 'node_modules', '.bin'), { recursive: true, force: true });
-  copyFile(
-    join(engineModules, 'skills', 'LICENSE'),
-    join(resources, 'licenses', 'skills-LICENSE.txt')
-  );
-  copyFile(nodeAssets.macLicense, join(resources, 'licenses', 'node-LICENSE.txt'));
-  write(join(resources, 'app', 'build.json'), buildInfo('macos-arm64'));
+  stageResources(resources, {
+    nodeBin: nodeAssets.macNode,
+    nodeLicense: nodeAssets.macLicense,
+    engineModules,
+    target: 'macos-arm64',
+  });
 
   const icon = makeIcon();
   if (icon) copyFile(icon, join(resources, 'AppIcon.icns'));
@@ -395,17 +342,12 @@ function buildWindows(nodeAssets, engineModules) {
   removeTree(root);
   mkdirSync(root, { recursive: true });
 
-  copyFile(nodeAssets.winNode, join(root, 'node.exe'));
-  copyFile(join(ROOT, 'dist', 'server', 'index.mjs'), join(root, 'app', 'server.mjs'));
-  copyDir(join(ROOT, 'dist', 'web'), join(root, 'app', 'web'));
-  copyDir(engineModules, join(root, 'engine', 'node_modules'));
-  rmSync(join(root, 'engine', 'node_modules', '.bin'), { recursive: true, force: true });
-  copyFile(
-    join(engineModules, 'skills', 'LICENSE'),
-    join(root, 'licenses', 'skills-LICENSE.txt')
-  );
-  copyFile(nodeAssets.winLicense, join(root, 'licenses', 'node-LICENSE.txt'));
-  write(join(root, 'app', 'build.json'), buildInfo('windows-x64'));
+  stageResources(root, {
+    nodeBin: nodeAssets.winNode,
+    nodeLicense: nodeAssets.winLicense,
+    engineModules,
+    target: 'windows-x64',
+  });
   write(join(root, 'README.txt'), readme('windows'));
 
   const go = spawnSync('go', ['version'], { stdio: 'pipe' });

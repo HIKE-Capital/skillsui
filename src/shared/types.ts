@@ -125,6 +125,11 @@ export interface Bootstrap {
     configDir: string;
     engineDir: string;
   };
+  /**
+   * False inside the desktop shell (SKILLSUI_SHELL=electron), where closing
+   * the window is the quit gesture and the in-app quit button is hidden.
+   */
+  quitAvailable: boolean;
 }
 
 export interface InstallRequest {

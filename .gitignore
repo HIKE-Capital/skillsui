@@ -5,4 +5,10 @@ release/
 *.log
 .DS_Store
 .skillsui/
-electron/
+
+# Electron shell build artifacts (sources ARE committed)
+electron/node_modules/
+electron/release/
+electron/resources-mac/
+electron/resources-win/
+electron/icons/

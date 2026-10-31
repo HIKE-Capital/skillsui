@@ -332,6 +332,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
           }
         })(),
       },
+      quitAvailable: process.env.SKILLSUI_SHELL !== 'electron',
     };
   });
 
@@ -588,7 +589,23 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     return { config, git: await currentGitStatus(config) };
   });
 
-  app.post('/api/quit', async (_request, reply) => {
+  // Desktop shells call this when their window closes. In-flight jobs make it
+  // answer 409 so the shell can confirm with the user; `?force=1` overrides.
+  app.post('/api/quit', async (request, reply) => {
+    const active = listJobs().filter(
+      (job) => job.status === 'running' || job.status === 'queued'
+    );
+    const force = (request.query as Record<string, string | undefined>).force === '1';
+    if (active.length > 0 && !force) {
+      const english = loadConfig().locale === 'en';
+      return reply.code(409).send({
+        error: 'JOBS_RUNNING',
+        count: active.length,
+        message: english
+          ? `${active.length} task(s) are still running. Quitting will interrupt them.`
+          : `有 ${active.length} 个任务正在进行，退出会中断它们。`,
+      });
+    }
     reply.send({ ok: true });
     setTimeout(() => process.exit(0), 120);
     return reply;
