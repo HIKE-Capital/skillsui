@@ -50,15 +50,6 @@ export function SettingsIcon(props: IconProps) {
   );
 }
 
-export function PowerIcon(props: IconProps) {
-  return (
-    <svg {...base(props)}>
-      <path d="M12 3v9" />
-      <path d="M6.3 6.3a8 8 0 1 0 11.4 0" />
-    </svg>
-  );
-}
-
 export function RefreshIcon(props: IconProps) {
   return (
     <svg {...base(props)}>

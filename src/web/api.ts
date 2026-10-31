@@ -123,7 +123,6 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(body),
     }),
-  quit: () => request<{ ok: boolean }>('/api/quit', { method: 'POST' }),
 };
 
 export interface JobHandlers {

@@ -69,15 +69,12 @@ async function resolveServer() {
   const adopted = await tryExisting();
   if (adopted) return { rt: adopted, adopted: true };
 
-  // 2. Start our own bundled server.
+  // 2. Start our own bundled server. The child log aids support diagnostics
+  // (server stdout/stderr would otherwise be lost).
   const out = fs.openSync('/tmp/skillsui-server-child.log', 'a');
   server = spawn(NODE_BIN, [SERVER], {
     stdio: ['ignore', out, out],
-    env: {
-      ...process.env,
-      SKILLSUI_NO_OPEN: '1',
-      SKILLSUI_SHELL: 'electron',
-    },
+    env: { ...process.env, SKILLSUI_NO_OPEN: '1' },
     windowsHide: true,
   });
   for (let i = 0; i < 100; i++) {
@@ -98,10 +95,8 @@ async function resolveServer() {
 // adopted ones need a (slow) liveness poll.
 function watchServerDeath(rt) {
   if (server) {
-    server.on('exit', (code, signal) => {
+    server.on('exit', () => {
       if (!quitting) setTimeout(() => app.quit(), 400);
-    });
-    server.on('error', (err) => {
     });
     if (server.exitCode !== null) {
       // Child already died before we attached; quit right away.
@@ -127,13 +122,17 @@ function watchServerDeath(rt) {
   }, 5000);
 }
 
+function showStartupError() {
+  dialog.showErrorBox(
+    'Skillsui',
+    '本地服务启动失败。请重新打开应用；如果问题持续，删除 ~/.skillsui/runtime.json 后重试。'
+  );
+}
+
 async function createWindow() {
   const resolved = await resolveServer();
   if (!resolved) {
-    dialog.showErrorBox(
-      'Skillsui',
-      '本地服务启动失败。请重新打开应用；如果问题持续，删除 ~/.skillsui/runtime.json 后重试。'
-    );
+    showStartupError();
     app.quit();
     return;
   }
@@ -142,8 +141,11 @@ async function createWindow() {
   win = new BrowserWindow({
     width: 1280,
     height: 840,
-    minWidth: 720,
-    minHeight: 560,
+    // Minimums fit the install modal (max-width 780 + 24px backdrop padding
+    // per side; the skill list is a 52vh column), and the app now only has
+    // the desktop layout — no mobile breakpoint.
+    minWidth: 840,
+    minHeight: 620,
     title: 'Skillsui',
     backgroundColor: '#f4f4ee',
     show: !E2E,
@@ -177,7 +179,7 @@ async function createWindow() {
       const body = await res.json().catch(() => ({}));
       const choice = await dialog.showMessageBox(win, {
         type: 'warning',
-        message: body.message ?? '有任务正在进行，退出会中断它们。',
+        message: body.message, // localized by the server, which owns the policy
         buttons: ['取消', '退出'],
         defaultId: 0,
         cancelId: 0,
@@ -198,12 +200,9 @@ async function createWindow() {
   watchServerDeath(rt);
   try {
     await win.loadURL(`http://127.0.0.1:${rt.port}/?token=${rt.token}`);
-  } catch (error) {
+  } catch {
     if (!quitting) {
-      dialog.showErrorBox(
-        'Skillsui',
-        '本地服务启动失败。请重新打开应用；如果问题持续，删除 ~/.skillsui/runtime.json 后重试。'
-      );
+      showStartupError();
       app.quit();
     }
   }

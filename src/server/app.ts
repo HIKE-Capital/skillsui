@@ -332,7 +332,6 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
           }
         })(),
       },
-      quitAvailable: process.env.SKILLSUI_SHELL !== 'electron',
     };
   });
 

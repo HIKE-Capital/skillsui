@@ -5,7 +5,6 @@ import {
   GlobeIcon,
   OpenFolderIcon,
   PlusIcon,
-  PowerIcon,
   SettingsIcon,
   XIcon,
 } from './Icons.js';
@@ -19,14 +18,11 @@ interface SidebarProps {
   agents: AgentInfo[];
   engineVersion: string;
   version: string;
-  /** False in the desktop shell: closing the window stops the app. */
-  quitAvailable: boolean;
   onSelectGlobal: () => void;
   onSelectProject: (project: RecentProject) => void;
   onAddProject: () => void;
   onRemoveProject: (project: RecentProject) => void;
   onOpenSettings: () => void;
-  onQuit: () => void;
 }
 
 function projectLabel(project: RecentProject): string {
@@ -41,13 +37,11 @@ export function Sidebar({
   agents,
   engineVersion,
   version,
-  quitAvailable,
   onSelectGlobal,
   onSelectProject,
   onAddProject,
   onRemoveProject,
   onOpenSettings,
-  onQuit,
 }: SidebarProps) {
   return (
     <aside className="rail">
@@ -118,37 +112,16 @@ export function Sidebar({
       </nav>
 
       <div className="rail-foot">
-        <div className="rail-actions">
-          <button
-            type="button"
-            className="rail-settings"
-            onClick={onOpenSettings}
-            aria-label={t('nav.settings')}
-            title={t('nav.settings')}
-          >
-            <SettingsIcon size={17} />
-            <span className="rail-settings-label">{t('nav.settings')}</span>
-          </button>
-          {quitAvailable ? (
-            <button
-              type="button"
-              className="rail-quit"
-              onClick={onQuit}
-              aria-label={t('nav.quit')}
-              title={t('nav.quit')}
-            >
-              <PowerIcon size={17} />
-              <span className="rail-settings-label">{t('nav.quit')}</span>
-            </button>
-          ) : null}
-        </div>
-        <div className="rail-meta">
-          <span>v{version}</span>
-          <span className="rail-meta-sep">·</span>
-          <span>
-            {t('footer.engine')} {engineVersion}
-          </span>
-        </div>
+        <button
+          type="button"
+          className="icon-button rail-settings"
+          onClick={onOpenSettings}
+          aria-label={t('nav.settings')}
+          title={`${t('nav.settings')} · ${t('footer.engine')} ${engineVersion}`}
+        >
+          <SettingsIcon size={17} />
+        </button>
+        <span className="rail-version">v{version}</span>
       </div>
     </aside>
   );

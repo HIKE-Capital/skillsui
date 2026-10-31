@@ -9,6 +9,7 @@ npm install
 
 # Development: tsx API on 127.0.0.1:4317 (SKILLSUI_DEV=1, auth disabled)
 # + Vite on localhost:5173, proxying /api to the API.
+# The dev API does NOT hot-reload: restart `npm run dev` after server-side changes.
 npm run dev
 
 npm run typecheck
@@ -29,6 +30,10 @@ npm run build:server
 
 # Portable bundles: release/Skillsui-macOS-arm64.zip and release/Skillsui-Windows-x64.zip
 npm run portable
+
+# Electron packages: electron/release/ (DMG arm64 + Setup.exe x64)
+node electron/build.mjs
+# Shell-logic iteration without packaging: `npx electron main.cjs` (uses the staged resources-mac/)
 
 # Verify the ad-hoc-signed macOS bundle
 codesign --verify --deep --strict release/Skillsui-macOS-arm64/Skillsui.app
@@ -62,7 +67,7 @@ Browser -> Fastify /api -> serial job queue -> skills CLI -> agent skill dirs + 
 - `agents.ts` is a vendored copy of the upstream agent table (79 entries) plus detection. `agent-service.ts` maps it to UI `AgentInfo` and enforces global-support rules. When upgrading `skills`, re-sync this file from upstream.
 - `git.ts` probes for a usable Git binary (`SKILLSUI_GIT`, PATH, Homebrew/MacPorts paths, Git for Windows/MinGit locations) and prepends its directories to PATH for every CLI child process. On macOS it never probes `/usr/bin/git` before `xcode-select -p` succeeds, because the shim opens the Command Line Tools installer. Results are cached for 60s.
 - `icons.ts` serves row icons via `/api/icons/github/:owner` (owner avatar from `github.com/<owner>.png`) and `/api/icons/site/:host` (favicon chain: `/favicon.ico`, then `<link rel*=icon>` parsing of the `SOURCE_LANDING_PAGES` page and the site root, including `data:` URLs). Results are cached under `~/.skillsui/icons/` (30-day positive / 24h negative TTL) with in-flight dedupe; a successful install calls `invalidateIconForSource()` to drop that source's entry so the next render refetches; failures return 404 and the UI falls back to letter marks. Responses use `Cache-Control: private, no-cache` + a content-hash ETag, so the browser revalidates every render (304 when unchanged) and picks up refreshed icons immediately. Only the source's own host is contacted — no third-party icon services.
-- `sources.ts` classifies input as well-known, GitHub, or direct HTTP. It fetches `/.well-known/agent-skills/index.json` natively, builds both the standard `owner/repo` source (`standardGithubSource`) and the `codeload.github.com/<owner>/<repo>/tar.gz/<ref>` fallback, and parses the CLI's human-readable `add --list` output for GitHub/direct sources. Its indentation heuristic is pinned to `skills@1.7.4` output.
+- `sources.ts` classifies input as well-known, GitHub, or direct HTTP. It fetches `/.well-known/agent-skills/index.json` natively, builds both the standard `owner/repo` source (`standardGithubSource`) and the `codeload.github.com/<owner>/<repo>/tar.gz/<ref>` fallback, and parses the CLI's human-readable `add --list` output for GitHub/direct sources; skill lines are recognized as kebab-case slugs — group headers from nested repos (e.g. anthropics/skills) become `SourceSkill.group` for sticky section labels in the install picker. Parsing is pinned to `skills@1.7.4` output.
 - `operations.ts` performs mutations through `runCli` (`add`, `remove`, `update`) and handles the two tracking models below. GitHub installs use the standard flow when Git is available and `config.githubMode` is not `direct`; Git-specific failures retry once with the tarball URL, and standard updates delete the stale Skillsui record so the official lock takes over.
 - `list.ts` reads `skills list --json`, overlays `github-installs.json`, reads descriptions from each installed `SKILL.md`, and adds global lock timestamps.
 
@@ -85,9 +90,15 @@ UI state lives in `~/.skillsui/config.json` (locale, recent projects, active pro
 
 ### Portable packaging (`scripts/`)
 
-- `build-portable.mjs` downloads Node 24.22.1, stages the engine, assembles `Skillsui.app` and `Skillsui-Windows-x64`, removes npm's `node_modules/.bin` absolute symlinks (they break macOS code signing), ad-hoc signs the `.app`, and zips with `ditto`.
+- `build-portable.mjs` (using the shared staging recipe `scripts/lib/stage.mjs`, also used by the Electron build) downloads Node 24.22.1, stages the engine, assembles `Skillsui.app` and `Skillsui-Windows-x64`, removes npm's `node_modules/.bin` absolute symlinks (they break macOS code signing), ad-hoc signs the `.app`, and zips with `ditto`.
 - `scripts/launcher/macos/main.c` is a Mach-O launcher: it sets `SKILLSUI_ENGINE_DIR`/`SKILLSUI_WEB_DIR` and `exec`s the bundled Node. `scripts/launcher/windows/main.go` starts Node detached/hidden and exits.
 - `src/server/paths.ts` resolves the engine/web assets in this order: explicit `SKILLSUI_ENGINE_DIR`/`SKILLSUI_WEB_DIR`, then `<dirname(process.execPath)>/engine` and `/app/web`, then development paths (`node_modules/skills`, `dist/web`).
+
+### Desktop shell (`electron/`)
+
+- `electron/main.cjs` is an Electron wrapper over the same staged layout: it spawns the bundled Node + server, shows a window on the local URL, and quits when the window closes. There is **no in-app quit button** — closing the window is the quit gesture, in both the desktop shell and the browser (a tab is just closed). `POST /api/quit` remains, used by the shell's window-close flow; it answers 409 with a localized message while jobs are running so the shell can confirm.
+- `electron/build.mjs` stages the same payload as `build-portable.mjs` (via `scripts/lib/stage.mjs`) and runs electron-builder: DMG (macOS arm64) + NSIS (Windows x64) into `electron/release/`. Iterate without packaging by staging + `npx electron main.cjs`; package only at milestones.
+- `SKILLSUI_E2E=1` runs the shell headless (hidden window, private userData) for automated checks; the driver kills the app under test.
 
 ### Product constraints
 
@@ -95,6 +106,7 @@ UI state lives in `~/.skillsui/config.json` (locale, recent projects, active pro
 - Node requirement is **>= 22.20**; portable bundles use 24.22.1.
 - GitHub mode is **public repositories only**. With Git it uses the official clone flow; without Git it falls back to HTTPS tarballs and is app-managed. GitLab, Azure, and arbitrary git URLs are out of scope.
 - The UI is intentionally core-only: install, remove, update, list, multi-agent, global/project, multi-project. No `find`, `init`, `sync`, or SKILL.md preview.
+- The product name is **Skillsui** (UI not capitalized). The UI is desktop-only — the mobile responsive layout was removed; the Electron window floors at 840×620 (sized to the install modal). There is no in-app quit button anywhere: closing the window/tab is the quit gesture.
 - The topbar exposes a single **全部更新** action; every installed row has an icon-only **更新** button, and each source group header has a delete-all button plus a link to the source site (GitHub repo or domain, with hardcoded landing pages for a couple of hosts in `src/shared/sourcePages.ts`). There is no "check for updates" feature: `skills@1.7.4` routes `check` to the same `runUpdate()` as `update`, so a "check" button would install updates — `/api/check-updates` and the check code were removed for this reason. Row action buttons are hover-only.
 - UI is bilingual (`zh-CN` default via system locale, English toggle); server error strings are Chinese. Row icons come from the server-side icon cache; the browser never fetches source hosts directly.
 - Loopback-only, token-authenticated, no telemetry. Never use `--agent '*'`; pass explicit agent keys.
@@ -112,5 +124,5 @@ UI state lives in `~/.skillsui/config.json` (locale, recent projects, active pro
 
 - GitHub installs in **direct/fallback mode** do not appear in the official `skills-lock.json`; `npx skills list` shows `Source: local`. Standard-mode installs are normal lock entries.
 - Private GitHub repositories require Git/tokens and are unsupported in v1.
-- The Windows build needs real-device acceptance: SmartScreen, browser launch, symlink fallback, and the Quit path.
+- The Windows build needs real-device acceptance: SmartScreen, browser launch, symlink fallback, and server start/stop lifecycle.
 - See `README.md` for user-facing setup.

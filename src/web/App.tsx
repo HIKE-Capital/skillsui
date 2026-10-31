@@ -86,7 +86,6 @@ export function App() {
   const [loadingBootstrap, setLoadingBootstrap] = useState(true);
   const [fatalError, setFatalError] = useState<string | null>(null);
   const [unauthorized, setUnauthorized] = useState(false);
-  const [quitting, setQuitting] = useState(false);
 
   const [skills, setSkills] = useState<InstalledSkill[]>([]);
   const [skillsLoading, setSkillsLoading] = useState(false);
@@ -461,15 +460,6 @@ export function App() {
     }
   };
 
-  const quit = async () => {
-    setQuitting(true);
-    try {
-      await api.quit();
-    } catch {
-      // The server may close the connection before responding.
-    }
-  };
-
   const filteredSkills = useMemo(() => {
     const query = filter.trim().toLowerCase();
     if (!query) return skills;
@@ -484,20 +474,6 @@ export function App() {
 
   if (unauthorized) {
     return <AccessScreen locale={fallbackLocale} />;
-  }
-
-  if (quitting) {
-    return (
-      <div className="quit">
-        <div className="quit-mark" aria-hidden>
-          <span className="quit-halo" />
-          <span className="mark-card mark-card--back quit-card-back" />
-          <span className="mark-card mark-card--front quit-card-front" />
-        </div>
-        <h1 className="quit-title">{translate(locale, 'quit.title')}</h1>
-        <p className="quit-body">{translate(locale, 'quit.body')}</p>
-      </div>
-    );
   }
 
   if (loadingBootstrap) {
@@ -526,13 +502,11 @@ export function App() {
         agents={bootstrap.agents}
         engineVersion={bootstrap.engineVersion}
         version={bootstrap.version}
-        quitAvailable={bootstrap.quitAvailable}
         onSelectGlobal={() => void selectGlobal()}
         onSelectProject={(project) => void selectProject(project)}
         onAddProject={() => setAddProjectOpen(true)}
         onRemoveProject={(project) => void removeProject(project)}
         onOpenSettings={() => setSettingsOpen(true)}
-        onQuit={() => void quit()}
       />
 
       <main className="main">

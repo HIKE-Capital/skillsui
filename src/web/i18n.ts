@@ -9,7 +9,6 @@ const zh = {
   'nav.addProject': '添加项目',
   'nav.emptyProjects': '还没有项目',
   'nav.settings': '设置',
-  'nav.quit': '退出',
   'scope.projectHint': '只对当前项目生效',
   'source.placeholder': '粘贴 skill 地址，例如 https://q.hikecapital.com',
   'source.fetch': '获取技能',
@@ -143,8 +142,6 @@ const zh = {
   'status.trackedHint': '由官方 skills 引擎记录，可以使用官方更新。',
   'empty.tryExample': '安装示例技能',
   'footer.engine': '引擎',
-  'quit.title': 'Skillsui 已退出',
-  'quit.body': '可以关闭这个页面。下次使用时重新打开 Skillsui。',
 } as const;
 
 type MessageKey = keyof typeof zh;
@@ -158,7 +155,6 @@ const en: Record<MessageKey, string> = {
   'nav.addProject': 'Add project',
   'nav.emptyProjects': 'No projects yet',
   'nav.settings': 'Settings',
-  'nav.quit': 'Quit',
   'scope.projectHint': 'Only for this project',
   'source.placeholder': 'Paste a skill source, e.g. https://q.hikecapital.com',
   'source.fetch': 'Find skills',
@@ -293,8 +289,6 @@ const en: Record<MessageKey, string> = {
   'status.trackedHint': 'Tracked by the official skills engine and updated officially.',
   'empty.tryExample': 'Install an example skill',
   'footer.engine': 'Engine',
-  'quit.title': 'Skillsui has quit',
-  'quit.body': 'You can close this page. Reopen Skillsui when you need it again.',
 };
 
 const dictionaries: Record<Locale, Record<MessageKey, string>> = { zh, en };
