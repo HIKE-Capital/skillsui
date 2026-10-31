@@ -19,7 +19,7 @@
   - 标准 well-known 来源，例如 `https://q.hikecapital.com`
   - GitHub 公开仓库，例如 `op7418/Humanizer-zh` 或 GitHub 仓库 URL
   - 直接 SKILL.md / zip / tar 下载地址
-- 多 agent 选择：自动探测本机 agent，支持 79 个 agent 路径
+- 多 agent 选择：自动探测本机 agent，支持 72 个 agent 路径
 - 全局 / 多项目库分别管理，项目路径可保存、切换
 - 单个更新、全部更新
 - 卸载 skill，并清理官方锁文件与 Skillsui 元数据

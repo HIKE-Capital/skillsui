@@ -1,8 +1,17 @@
 // Derived from vercel-labs/skills src/agents.ts (MIT).
 // See THIRD_PARTY_LICENSES/skills-LICENSE.txt.
+//
+// Local patch: uncommon/irregular agents are deliberately removed from the
+// upstream table — astrbot, eve, gemini-cli, openclaw, warp, zencoder,
+// zenflow. Reasons: gemini-cli is abandoned upstream (antigravity remains);
+// zencoder/zenflow duplicate each other's detection; eve's project-scoped
+// rule is irregular; astrbot/warp are generic-directory false positives;
+// openclaw was dropped by product decision (the universal pseudo-agent row
+// stays — it is the explicit install target for the shared directory).
+// Re-apply these removals whenever the table is re-synced from upstream.
 import { homedir } from 'os';
 import { join } from 'path';
-import { existsSync, readFileSync, readdirSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import type { AgentConfig, AgentType } from './agent-types.js';
 
 let detectionCwd = process.cwd();
@@ -29,36 +38,6 @@ const grokHome = process.env.GROK_HOME?.trim() || join(home, '.grok');
 const sarvamHome = process.env.SARVAM_HOME?.trim() || join(home, '.sarvam');
 const zedAppDataHome = process.env.APPDATA?.trim();
 const zedFlatpakConfigHome = process.env.FLATPAK_XDG_CONFIG_HOME?.trim();
-
-function packageJsonHasDependency(packageJsonPath: string, dependencyName: string): boolean {
-  try {
-    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8')) as {
-      dependencies?: Record<string, unknown>;
-      devDependencies?: Record<string, unknown>;
-    };
-    return !!(
-      packageJson.dependencies?.[dependencyName] || packageJson.devDependencies?.[dependencyName]
-    );
-  } catch {
-    return false;
-  }
-}
-
-export function getOpenClawGlobalSkillsDir(
-  homeDir = home,
-  pathExists: (path: string) => boolean = existsSync
-) {
-  if (pathExists(join(homeDir, '.openclaw'))) {
-    return join(homeDir, '.openclaw/skills');
-  }
-  if (pathExists(join(homeDir, '.clawdbot'))) {
-    return join(homeDir, '.clawdbot/skills');
-  }
-  if (pathExists(join(homeDir, '.moltbot'))) {
-    return join(homeDir, '.moltbot/skills');
-  }
-  return join(homeDir, '.openclaw/skills');
-}
 
 export function isZCodeInstalled(
   homeDir = home,
@@ -129,15 +108,6 @@ export const agents: Record<AgentType, AgentConfig> = {
       return existsSync(join(home, '.gemini/antigravity-cli'));
     },
   },
-  astrbot: {
-    name: 'astrbot',
-    displayName: 'AstrBot',
-    skillsDir: 'data/skills',
-    globalSkillsDir: join(home, '.astrbot/data/skills'),
-    detectInstalled: async () => {
-      return existsSync(join(currentCwd(), 'data/skills')) || existsSync(join(home, '.astrbot'));
-    },
-  },
   'autohand-code': {
     name: 'autohand-code',
     displayName: 'Autohand Code CLI',
@@ -176,19 +146,6 @@ export const agents: Record<AgentType, AgentConfig> = {
       return existsSync(claudeHome);
     },
   },
-  openclaw: {
-    name: 'openclaw',
-    displayName: 'OpenClaw',
-    skillsDir: 'skills',
-    globalSkillsDir: getOpenClawGlobalSkillsDir(),
-    detectInstalled: async () => {
-      return (
-        existsSync(join(home, '.openclaw')) ||
-        existsSync(join(home, '.clawdbot')) ||
-        existsSync(join(home, '.moltbot'))
-      );
-    },
-  },
   cline: {
     name: 'cline',
     displayName: 'Cline',
@@ -216,6 +173,9 @@ export const agents: Record<AgentType, AgentConfig> = {
       return existsSync(join(currentCwd(), '.codebuddy')) || existsSync(join(home, '.codebuddy'));
     },
   },
+  // WorkBuddy (CodeBuddy's Tencent sibling, `~/.workbuddy`) is NOT listed:
+  // installs run through the skills CLI, which rejects unknown agent keys
+  // ("Invalid agents"). Re-add it when the pinned CLI ships a workbuddy entry.
   codemaker: {
     name: 'codemaker',
     displayName: 'Codemaker',
@@ -330,18 +290,6 @@ export const agents: Record<AgentType, AgentConfig> = {
       return existsSync(join(home, '.factory'));
     },
   },
-  eve: {
-    name: 'eve',
-    displayName: 'Eve',
-    skillsDir: 'agent/skills',
-    globalSkillsDir: undefined,
-    detectInstalled: async () => {
-      const cwd = currentCwd();
-      return (
-        existsSync(join(cwd, 'agent')) && packageJsonHasDependency(join(cwd, 'package.json'), 'eve')
-      );
-    },
-  },
   firebender: {
     name: 'firebender',
     displayName: 'Firebender',
@@ -369,15 +317,6 @@ export const agents: Record<AgentType, AgentConfig> = {
     globalSkillsDir: join(home, '.agents/skills'),
     detectInstalled: async () => {
       return existsSync(join(home, '.fx'));
-    },
-  },
-  'gemini-cli': {
-    name: 'gemini-cli',
-    displayName: 'Gemini CLI',
-    skillsDir: '.agents/skills',
-    globalSkillsDir: join(home, '.gemini/skills'),
-    detectInstalled: async () => {
-      return existsSync(join(home, '.gemini'));
     },
   },
   'github-copilot': {
@@ -730,15 +669,6 @@ export const agents: Record<AgentType, AgentConfig> = {
       return existsSync(join(home, '.trae-cn'));
     },
   },
-  warp: {
-    name: 'warp',
-    displayName: 'Warp',
-    skillsDir: '.agents/skills',
-    globalSkillsDir: join(home, '.agents/skills'),
-    detectInstalled: async () => {
-      return existsSync(join(home, '.warp'));
-    },
-  },
   windsurf: {
     name: 'windsurf',
     displayName: 'Windsurf',
@@ -769,24 +699,6 @@ export const agents: Record<AgentType, AgentConfig> = {
     globalSkillsDir: join(home, '.zcode/skills'),
     detectInstalled: async () => {
       return isZCodeInstalled();
-    },
-  },
-  zencoder: {
-    name: 'zencoder',
-    displayName: 'Zencoder',
-    skillsDir: '.zencoder/skills',
-    globalSkillsDir: join(home, '.zencoder/skills'),
-    detectInstalled: async () => {
-      return existsSync(join(home, '.zencoder'));
-    },
-  },
-  zenflow: {
-    name: 'zenflow',
-    displayName: 'Zenflow',
-    skillsDir: '.zencoder/skills',
-    globalSkillsDir: join(home, '.zencoder/skills'),
-    detectInstalled: async () => {
-      return existsSync(join(home, '.zencoder'));
     },
   },
   neovate: {
@@ -861,36 +773,6 @@ export async function detectInstalledAgents(cwd?: string): Promise<AgentType[]> 
 
 export function getAgentConfig(type: AgentType): AgentConfig {
   return agents[type]!;
-}
-
-/**
- * Directory (relative to an Eve project root) that holds subagents.
- * Each subagent owns its own skills at `agent/subagents/<name>/skills`,
- * mirroring the root agent's `agent/skills`.
- */
-export const EVE_SUBAGENTS_DIR = join('agent', 'subagents');
-
-/**
- * Discover the names of Eve subagents in a project.
- *
- * Eve supports subagents that each have their own skills directory at
- * `agent/subagents/<name>/skills`. This returns the `<name>` of every
- * subagent directory found under `agent/subagents/`, sorted alphabetically.
- * Returns an empty list when the directory doesn't exist or can't be read.
- */
-export function getEveSubagents(cwd: string = currentCwd()): string[] {
-  const dir = join(cwd, EVE_SUBAGENTS_DIR);
-  if (!existsSync(dir)) {
-    return [];
-  }
-  try {
-    return readdirSync(dir, { withFileTypes: true })
-      .filter((entry) => entry.isDirectory())
-      .map((entry) => entry.name)
-      .sort();
-  } catch {
-    return [];
-  }
 }
 
 /**

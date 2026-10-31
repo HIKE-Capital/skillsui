@@ -590,10 +590,6 @@ export function App() {
               onRemove={(skill) => setRemoveSkill(skill)}
               onRemoveGroup={(group) => setRemoveGroup(group)}
               onClearFilter={() => setFilter('')}
-              onTryExample={() => {
-                setSourceInput('https://q.hikecapital.com');
-                void scanFor('https://q.hikecapital.com');
-              }}
             />
           </section>
         </div>

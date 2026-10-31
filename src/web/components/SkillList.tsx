@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { InstalledSkill } from '../../shared/types.js';
 import { SOURCE_LANDING_PAGES } from '../../shared/sourcePages.js';
 import type { Translate } from '../i18n.js';
-import { AlertIcon, ExternalIcon, PackageIcon, RefreshIcon, TrashIcon } from './Icons.js';
+import { AlertIcon, ExternalIcon, RefreshIcon, TrashIcon } from './Icons.js';
 
 interface SkillListProps {
   t: Translate;
@@ -13,7 +13,6 @@ interface SkillListProps {
   onRemove: (skill: InstalledSkill) => void;
   onRemoveGroup: (group: { label: string; skills: InstalledSkill[] }) => void;
   onClearFilter: () => void;
-  onTryExample: () => void;
 }
 
 function skillInitials(name: string): string {
@@ -150,7 +149,6 @@ export function SkillList({
   onRemove,
   onRemoveGroup,
   onClearFilter,
-  onTryExample,
 }: SkillListProps) {
   if (loading) {
     return (
@@ -179,16 +177,14 @@ export function SkillList({
         <h3 className="empty-title">
           {filter ? t('installed.noMatch') : t('installed.emptyTitle')}
         </h3>
-        <p className="empty-body">{filter ? t('installed.filter') : t('installed.emptyBody')}</p>
         {filter ? (
-          <button type="button" className="btn btn--ghost btn--small" onClick={onClearFilter}>
-            {t('actions.retry')}
-          </button>
-        ) : (
-          <button type="button" className="btn btn--ghost btn--small" onClick={onTryExample}>
-            {t('empty.tryExample')}
-          </button>
-        )}
+          <>
+            <p className="empty-body">{t('installed.filter')}</p>
+            <button type="button" className="btn btn--ghost btn--small" onClick={onClearFilter}>
+              {t('actions.retry')}
+            </button>
+          </>
+        ) : null}
       </div>
     );
   }
@@ -335,14 +331,5 @@ export function SkillList({
         );
       })}
     </div>
-  );
-}
-
-export function CatalogEmptyHint({ t }: { t: Translate }) {
-  return (
-    <span className="catalog-empty-hint">
-      <PackageIcon size={16} />
-      {t('installed.emptyBody')}
-    </span>
   );
 }

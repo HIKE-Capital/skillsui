@@ -17,7 +17,6 @@ const zh = {
   'installed.title': '已安装',
   'installed.count': '{n} 个 skill',
   'installed.emptyTitle': '还没有安装 skill',
-  'installed.emptyBody': '在上面的输入框粘贴来源地址，或试试 https://q.hikecapital.com',
   'installed.filter': '搜索已安装的 skill',
   'installed.refresh': '刷新列表',
   'installed.noMatch': '没有匹配的 skill',
@@ -141,7 +140,6 @@ const zh = {
   'status.missingHint': '锁文件里还有记录，但磁盘上没有文件。',
   'status.untrackedHint': '这个 skill 不在官方锁文件里，可能是 Skillsui 的 HTTPS 安装。',
   'status.trackedHint': '由官方 skills 引擎记录，可以使用官方更新。',
-  'empty.tryExample': '安装示例技能',
   'footer.engine': '引擎',
 } as const;
 
@@ -164,7 +162,6 @@ const en: Record<MessageKey, string> = {
   'installed.title': 'Installed',
   'installed.count': '{n} skills',
   'installed.emptyTitle': 'No skills installed yet',
-  'installed.emptyBody': 'Paste a source above, or try https://q.hikecapital.com',
   'installed.filter': 'Filter installed skills',
   'installed.refresh': 'Refresh list',
   'installed.noMatch': 'No matching skills',
@@ -289,7 +286,6 @@ const en: Record<MessageKey, string> = {
   'status.missingHint': 'The lock file still lists it, but the files are gone.',
   'status.untrackedHint': 'This skill is not in the official lock file; it may be a Skillsui HTTPS install.',
   'status.trackedHint': 'Tracked by the official skills engine and updated officially.',
-  'empty.tryExample': 'Install an example skill',
   'footer.engine': 'Engine',
 };
 
