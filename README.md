@@ -80,8 +80,7 @@ node electron/build.mjs
 - **GitLab / Azure / 任意 git URL** 不在 v1 范围内。
 - **直链模式的 GitHub 安装不会写入官方 `skills-lock.json`**，由 Skillsui 的元数据管理；`npx skills list` 会显示 `Source: local`。标准模式没有这个限制。模式自动选择，不需要配置。
 - macOS 使用 ad-hoc 签名，无付费 Developer ID 公证。首次打开被 Gatekeeper 拦截时：macOS Sequoia 15 及更新版本，先双击 .app，再到「系统设置 → 隐私与安全性」最下方点击「仍要打开」；Sonoma 14 及更早版本可用右键 →「打开」。
-- Windows 包未签名，SmartScreen 会提示“更多信息 → 仍要运行”。
-- Windows 构建已在 macOS 上交叉编译并通过文件/结构检查，但真实安装/更新/卸载仍需在 Windows 上验收。
+- Windows 包未签名，SmartScreen 会提示“更多信息 → 仍要运行”；已在真实 Windows 设备上完成安装、启动、更新、卸载验收。
 
 ## 目录
 

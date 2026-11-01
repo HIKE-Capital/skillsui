@@ -117,7 +117,7 @@ UI state lives in `~/.skillsui/config.json` (locale, recent projects, active pro
 - Job dialogs: terminal states show only the summary block (the status pill is for queued/running); remove confirmations are warning-only — no agent chips, skill lists, or paths.
 - UI is bilingual (`zh-CN` default via system locale, English toggle); server error strings are Chinese. Row icons come from the server-side icon cache; the browser never fetches source hosts directly.
 - Loopback-only, token-authenticated, no telemetry. Never use `--agent '*'`; pass explicit agent keys.
-- The macOS bundle is ad-hoc signed (Gatekeeper: on macOS Sequoia 15+ users must approve via System Settings → Privacy & Security → Open Anyway; the right-click → Open bypass only applies to Sonoma 14 and earlier); Windows is unsigned. The Windows package has been cross-compiled and structurally checked but not run on a real Windows machine.
+- The macOS bundle is ad-hoc signed (Gatekeeper: on macOS Sequoia 15+ users must approve via System Settings → Privacy & Security → Open Anyway; the right-click → Open bypass only applies to Sonoma 14 and earlier); Windows is unsigned (SmartScreen shows "more info → run anyway"). Both installers have been accepted on real devices: macOS and a Windows install/start/update/remove cycle.
 
 ## Testing
 
@@ -131,5 +131,4 @@ UI state lives in `~/.skillsui/config.json` (locale, recent projects, active pro
 
 - GitHub installs in **direct/fallback mode** do not appear in the official `skills-lock.json`; `npx skills list` shows `Source: local`. Standard-mode installs are normal lock entries.
 - Private GitHub repositories require Git/tokens and are unsupported in v1.
-- The Windows build needs real-device acceptance: SmartScreen, browser launch, symlink fallback, and server start/stop lifecycle.
 - See `README.md` for user-facing setup.
