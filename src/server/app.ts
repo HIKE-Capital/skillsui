@@ -1,10 +1,10 @@
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { createReadStream, existsSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { extname, join, resolve, sep } from 'node:path';
-import { homedir } from 'node:os';
-import { createHash, timingSafeEqual } from 'node:crypto';
+import { homedir, tmpdir } from 'node:os';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import type {
   AppConfig,
   Bootstrap,
@@ -132,18 +132,37 @@ async function pickFolder(): Promise<string | null> {
       return path || null;
     }
     if (process.platform === 'win32') {
+      // powershell.exe (5.1) writes redirected stdout in the system ANSI
+      // codepage (GBK on Chinese-locale Windows), which execFile decodes as
+      // UTF-8 — non-ASCII paths come back mojibake'd. Route the result
+      // through a temp file with explicit UTF-8 instead of stdout.
+      const outPath = join(
+        tmpdir(),
+        `skillsui-pick-${randomBytes(6).toString('hex')}.txt`
+      );
       const script =
         "Add-Type -AssemblyName System.Windows.Forms; " +
         "$d = New-Object System.Windows.Forms.FolderBrowserDialog; " +
         "$d.Description = 'Select a project folder'; " +
-        "if ($d.ShowDialog() -eq 'OK') { Write-Output $d.SelectedPath }";
-      const { stdout } = await execFileAsync(
-        'powershell.exe',
-        ['-NoProfile', '-STA', '-Command', script],
-        { timeout: 120_000, windowsHide: true }
-      );
-      const path = stdout.trim();
-      return path || null;
+        "$out = $env:SKILLSUI_PICK_OUT; " +
+        "if ($d.ShowDialog() -eq 'OK') { " +
+        '[IO.File]::WriteAllText($out, $d.SelectedPath, (New-Object System.Text.UTF8Encoding($false))) }';
+      let selected = '';
+      try {
+        await execFileAsync(
+          'powershell.exe',
+          ['-NoProfile', '-STA', '-Command', script],
+          {
+            timeout: 120_000,
+            windowsHide: true,
+            env: { ...process.env, SKILLSUI_PICK_OUT: outPath },
+          }
+        );
+        if (existsSync(outPath)) selected = readFileSync(outPath, 'utf8');
+      } finally {
+        rmSync(outPath, { force: true });
+      }
+      return selected.trim() || null;
     }
     const { stdout } = await execFileAsync('zenity', ['--file-selection', '--directory'], {
       timeout: 120_000,
