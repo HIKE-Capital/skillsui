@@ -41,8 +41,12 @@ codesign --verify --deep --strict release/Skillsui-macOS-arm64/Skillsui.app
 # Verify the shipped DMG seal: mount it, then deep-verify the app inside
 hdiutil attach electron/release/Skillsui-<v>-arm64.dmg -mountpoint /tmp/m -nobrowse && codesign --verify --deep --strict /tmp/m/Skillsui.app && hdiutil detach /tmp/m
 
-# Release: stage version-less copies (Skillsui-macOS.dmg, Skillsui-Windows-Setup.exe, SHA256SUMS.txt), then
+# Release: bump the version in all three places (package.json, electron/package.json, src/server/paths.ts
+# APP_VERSION); stage version-less copies (Skillsui-macOS.dmg, Skillsui-Windows-Setup.exe, SHA256SUMS.txt);
+# run gh from the repo root (it fails in a bare staging dir) — then
 gh release upload vX.Y.Z --clobber <assets> && gh release edit vX.Y.Z --draft=false
+# Draft assets can't be fetched via the API (404); verify sizes before publish, then end-to-end
+# checksum-verify via releases/latest/download/<asset> after publishing.
 
 # Run without opening a browser (useful for API/acceptance tests)
 SKILLSUI_HOME=/tmp/skillsui-test SKILLSUI_NO_OPEN=1 node dist/server/index.mjs
@@ -63,7 +67,7 @@ Browser -> Fastify /api -> serial job queue -> skills CLI -> agent skill dirs + 
 ### Process and request lifecycle
 
 - `src/server/index.ts` is the entry point. It enforces a single instance through `~/.skillsui/runtime.json`, picks a random loopback port and random token, opens the browser, and logs to `~/.skillsui/logs/server.log`.
-- `src/server/app.ts` owns token/cookie auth (`/?token=...` sets `skillsui_session`, then redirects), same-host Origin checks, the API routes, and a **custom static handler** (`serveWeb`) with a path-traversal guard. The Windows folder picker returns the picked path via a UTF-8 temp file, not stdout: Windows PowerShell 5.1 writes redirected stdout in the system ANSI codepage (GBK on Chinese Windows), which would mojibake non-ASCII paths. `@fastify/static` was deliberately removed; do not reintroduce it without checking the advisory history.
+- `src/server/app.ts` owns token/cookie auth (`/?token=...` sets `skillsui_session`, then redirects), same-host Origin checks, the API routes, and a **custom static handler** (`serveWeb`) with a path-traversal guard. The Windows folder picker returns the picked path via a UTF-8 temp file, not stdout: Windows PowerShell 5.1 writes redirected stdout in the system ANSI codepage (GBK on Chinese Windows), which would mojibake non-ASCII paths. Generalize: never decode non-ASCII from powershell.exe stdout in any child-process capture. `@fastify/static` was deliberately removed; do not reintroduce it without checking the advisory history.
 - Long-running mutations (`install`, `remove`, `update`) are serialized through `src/server/engine/jobs.ts`. Jobs stream over SSE (`/api/jobs/:id/events`), cap in-memory logs at 5000 lines, and persist finished logs under `~/.skillsui/logs/`.
 - The frontend (`src/web/App.tsx`) is a thin orchestrator over `src/web/api.ts`: bootstrap, scope switching, skill list, install sheet, job sheet. Jobs continue if the sheet is closed.
 
